@@ -4,9 +4,13 @@ const bodyParser = require("body-parser")
 const {handle} = require("express/lib/router")
 const {request, response} = require("express")
 const {check, validationResult} = require("express-validator")
+const Recaptcha = require("express-recaptcha").RecaptchaV2
 require("dotenv").config()
 
 const app = express()
+const mailgun = new Mailgun(formData)
+const recaptcha = new Recaptcha(process.env.RECAPTCHA_SITE_KEY, process.env.RECAPTCHA_SECRET_KEY)
+const mailgunClient = mailgun.client({username: "api", key: process.env.MAILGUN_API_KEY})
 
 app.use(morgan("dev"))
 app.use(express.json())
@@ -33,13 +37,32 @@ const validation = [
 ]
 
 const handlePostRequest = (request, response) => {
+    const errors = validationResult(request)
     response.append("access-control-allow-origin", "*")
     return response.json("Email sent!")
+    if(errors.isEmpty() === false) {
+        const currentError = errors.array()[0]
+        return response.send(`<div class="alert alert-danger" role="alert"><strong>Failed!</strong> ${currentError.msg}</div>`)
+    }
+    if (request.recaptcha.error) {
+        return response.send(`\`<div class="alert alert-danger" role="alert"><strong>Failed!</strong>There was a problem with Recaptcha, please try again.</div>`)
+    }
+    const {email, name, message} = request.body
+    mailgunClient.messages.create(
+        process.env.MAILGUN_DOMAIN,
+        {to: process.env.MAILGUN_RECIPIENT,
+        from: `${name} <postmaster@${process.env.MAILGUN_DOMAIN}>`,
+        text:message}
+    ).then(()=> {
+        response.send(`<div class='alert alert-success' role='alert'>Email was sent.</div>`)
+    }).catch(error=> {
+        response.send(`<div class='alert alert-danger' role='alert'><strong>Error!</strong>${error}</div>`)
+    })
 }
 
 indexRoute.route("/")
     .get(handleGetRequest)
-    .post(validation, handlePostRequest)
+    .post(validation, recaptcha.middleware.verify, handlePostRequest)
 
 app.use("/apis", indexRoute)
 

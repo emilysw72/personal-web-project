@@ -4,6 +4,7 @@ const bodyParser = require("body-parser")
 const {handle} = require("express/lib/router")
 const {request, response} = require("express")
 const {check, validationResult} = require("express-validator")
+const Mailgun = require("")
 const Recaptcha = require("express-recaptcha").RecaptchaV2
 require("dotenv").config()
 
@@ -39,7 +40,7 @@ const validation = [
 const handlePostRequest = (request, response) => {
     const errors = validationResult(request)
     response.append("access-control-allow-origin", "*")
-    return response.json("Email sent!")
+    console.log(request.body)
     if(errors.isEmpty() === false) {
         const currentError = errors.array()[0]
         return response.send(`<div class="alert alert-danger" role="alert"><strong>Failed!</strong> ${currentError.msg}</div>`)
@@ -47,7 +48,6 @@ const handlePostRequest = (request, response) => {
     if (request.recaptcha.error) {
         return response.send(`\`<div class="alert alert-danger" role="alert"><strong>Failed!</strong>There was a problem with Recaptcha, please try again.</div>`)
     }
-    const {email, name, message} = request.body
     mailgunClient.messages.create(
         process.env.MAILGUN_DOMAIN,
         {to: process.env.MAILGUN_RECIPIENT,
@@ -56,6 +56,22 @@ const handlePostRequest = (request, response) => {
     ).then(()=> {
         response.send(`<div class='alert alert-success' role='alert'>Email was sent.</div>`)
     }).catch(error=> {
+        response.send(`<div class='alert alert-danger' role='alert'><strong>Error!</strong>${error}</div>`)
+    })
+
+    const {email, name, message} = request.body
+
+    mailgunClient.messages.create(
+        process.env.MAILGUN_DOMAIN,
+        {
+            to: process.env.MAILGUN_RECIPIENT,
+            from: `${name} <postmaster@${process.env.MAILGUN_DOMAIN}>`,
+            subject: 'Son Shining Rooster Website Query',
+            text: message
+        }
+    ).then(() => {
+        response.send(`<div class='alert alert-success' role='alert'>Email was sent.</div>`)
+    }).catch(error => {
         response.send(`<div class='alert alert-danger' role='alert'><strong>Error!</strong>${error}</div>`)
     })
 }

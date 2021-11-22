@@ -31,6 +31,7 @@ const validation = [
         .trim()
         .escape(),
     check("email", "Please provide a valid email.").isEmail(),
+    check("subject").optional().trim().escape(),
     check("message", "A message can't be longer than 2000 characters.")
         .trim()
         .escape()
@@ -38,26 +39,19 @@ const validation = [
 ]
 
 const handlePostRequest = (request, response) => {
+
     const errors = validationResult(request)
     response.append("access-control-allow-origin", "*")
     console.log(request.body)
+
     if(errors.isEmpty() === false) {
         const currentError = errors.array()[0]
         return response.send(`<div class="alert alert-danger" role="alert"><strong>Failed!</strong> ${currentError.msg}</div>`)
     }
+
     if (request.recaptcha.error) {
         return response.send(`\`<div class="alert alert-danger" role="alert"><strong>Failed!</strong>There was a problem with Recaptcha, please try again.</div>`)
     }
-    mailgunClient.messages.create(
-        process.env.MAILGUN_DOMAIN,
-        {to: process.env.MAILGUN_RECIPIENT,
-        from: `${name} <postmaster@${process.env.MAILGUN_DOMAIN}>`,
-        text:message}
-    ).then(()=> {
-        response.send(`<div class='alert alert-success' role='alert'>Email was sent.</div>`)
-    }).catch(error=> {
-        response.send(`<div class='alert alert-danger' role='alert'><strong>Error!</strong>${error}</div>`)
-    })
 
     const {email, name, message} = request.body
 
@@ -66,7 +60,7 @@ const handlePostRequest = (request, response) => {
         {
             to: process.env.MAILGUN_RECIPIENT,
             from: `${name} <postmaster@${process.env.MAILGUN_DOMAIN}>`,
-            subject: 'Son Shining Rooster Website Query',
+            subject: `${email}: ${subject}`,
             text: message
         }
     ).then(() => {

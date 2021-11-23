@@ -4,9 +4,9 @@ const bodyParser = require("body-parser")
 const {handle} = require("express/lib/router")
 const {request, response} = require("express")
 const {check, validationResult} = require("express-validator")
-const Mailgun = require("")
+const Mailgun = require("mailgun.js")
 const Recaptcha = require("express-recaptcha").RecaptchaV2
-require("dotenv").config()
+const formData = require("form-data")
 
 const app = express()
 const mailgun = new Mailgun(formData)
@@ -17,6 +17,7 @@ app.use(morgan("dev"))
 app.use(express.json())
 app.use(bodyParser.urlencoded({extended:false}))
 app.use(bodyParser.json())
+console.log(process.env.MAILGUN_API_KEY)
 
 const indexRoute = express.Router()
 
@@ -53,7 +54,7 @@ const handlePostRequest = (request, response) => {
         return response.send(`\`<div class="alert alert-danger" role="alert"><strong>Failed!</strong>There was a problem with Recaptcha, please try again.</div>`)
     }
 
-    const {email, name, message} = request.body
+    const {email, name, message, subject} = request.body
 
     mailgunClient.messages.create(
         process.env.MAILGUN_DOMAIN,
@@ -66,6 +67,7 @@ const handlePostRequest = (request, response) => {
     ).then(() => {
         response.send(`<div class='alert alert-success' role='alert'>Email was sent.</div>`)
     }).catch(error => {
+        console.log(error)
         response.send(`<div class='alert alert-danger' role='alert'><strong>Error!</strong>${error}</div>`)
     })
 }

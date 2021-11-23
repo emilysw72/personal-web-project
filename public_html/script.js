@@ -2,7 +2,7 @@ $(document).ready(function () {
     $("#contactForm").validate({
         debug:true,
         errorClass: "alert alert-danger",
-        errorLabelContainer: "$output-area",
+        errorLabelContainer: "#output-area",
         errorElement: "div",
         rules:{
             name: {
@@ -33,10 +33,10 @@ $(document).ready(function () {
         submitHandler: (form) => {
             $("#contactForm").ajaxSubmit({
                 type: "POST",
-                url: $("#contactForm").attributes('action'),
+                url: $("#contactForm").attr('action'),
                 success: (ajaxOutput) => {
-                    $('output-area').css("display", "")
-                    $('output-area').html(ajaxOutput)
+                    $("#output-area").css("display", "")
+                    $("#output-area").html(ajaxOutput)
                     if ($(".alert-success" >= 1)) {
                         $("#contactForm") [0].reset()
                     }

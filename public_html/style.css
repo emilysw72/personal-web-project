@@ -1,0 +1,12 @@
+h1 {
+    font-family: Verdana sans-serif;
+    font-weight: bold;
+    color: #ff8225;
+    text-shadow: 1px 1px 2px black;
+}
+
+body {
+    background-image: url("rudy-bg.png");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
